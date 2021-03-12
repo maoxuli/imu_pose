@@ -1,23 +1,22 @@
-﻿#ifndef MADGWICH_AHRS_H
-#define MADGWICH_AHRS_H
+﻿#ifndef MADGWICK_AHRS_H
+#define MADGWICK_AHRS_H
 
 #include <Eigen/Eigen>
 using namespace Eigen;
 
-class MadgwichAHRS 
+class MadgwickAHRS 
 {
-public:     
-    MadgwichAHRS(float sample_period, float beta = 1.0); 
+public:  
+    float qw, qx, qy, qz;   // quaternion of sensor frame relative to auxiliary frame
+
+    MadgwickAHRS(float sampleFreq = 512.0f, float beta = 0.1f); 
 
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz); 
     void update(float gx, float gy, float gz, float ax, float ay, float az); 
 
-    const Quaterniond quaternion() const { return Q; }
-
 private: 
-    float SamplePeriod; 
-    float Beta; 
-    Quaterniond Q; 
+    float SamplePeriod;     // sample period in seconds
+    float Beta;             // algorithm gain
 }; 
 
 #endif 

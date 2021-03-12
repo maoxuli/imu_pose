@@ -13,8 +13,8 @@ using namespace std::chrono;
 using namespace Eigen;
 
 #include "gl_cuboid.h"
+#include <MadgwickAHRS.hpp>
 // #include "pose_ekf.h"
-#include "MadgwickAHRS/MadgwickAHRS.h"
 
 struct IMU_LINE 
 {
@@ -34,8 +34,8 @@ struct IMU_LINE
     std::ostringstream oss; 
     oss << "acc: (" << acc(0) << ", " << acc(1) << ", " << acc(2) << ") " 
         << "gyr: (" << gyr(0) << ", " << gyr(1) << ", " << gyr(2) << ") "
-        << "mag: (" << mag(0) << ", " << mag(1) << ", " << mag(2) << ") "
-        << std::endl; 
+        << "mag: (" << mag(0) << ", " << mag(1) << ", " << mag(2) << ")"; 
+    return oss.str(); 
   }
 }; 
 
@@ -151,40 +151,40 @@ void loadCSV(const std::string& fname)
     imu.pitch = 0;
     imu.yaw = 0;
 
-    // printf("%s", imu.to_string().c_str()); 
+    // printf("%s\n", imu.to_string().c_str()); 
     imu_data.push_back(imu); 
   }
 }
 
 int main(int argc, char *argv[])
 {
-  // loadIMU("imu.txt"); 
-  loadCSV("test.csv"); 
+  // loadIMU("data/imu.txt"); 
+  // loadCSV("data/spiralStairs_CalInertialAndMag.csv");
+  // loadCSV("data/stairsAndCorridor_CalInertialAndMag.csv");
+  loadCSV("data/straightLine_CalInertialAndMag.csv");
+
+  MadgwickAHRS ahrs(512.0, 0.1); 
 
   GlCuboid viewer(&argc, argv); 
-  // pose_viewer viewer(&argc, argv); 
-  // pose_ekf pose;
-  // MadgwichAHRS ahrs(1/256.0); 
+  viewer.set_view(GlCuboid::CameraViews::Front); 
 
   double time = 0; 
   double dt = 0.01; 
   while (true) {
     IMU_LINE& imu = imu_data[current_line]; 
 
-    // ahrs.update(imu.gyr[0]*M_PI/180, imu.gyr[1]*M_PI/180, imu.gyr[2]*M_PI/180, 
-    //             imu.acc[0], imu.acc[1], imu.acc[2]); 
+    viewer.update_rotation(imu.roll, imu.pitch, imu.yaw); 
+    viewer.update_rotation(imu.qw, imu.qx, imu.qy, imu.qz); 
+    
+    ahrs.update(imu.gyr[0]*M_PI/180, imu.gyr[1]*M_PI/180, imu.gyr[2]*M_PI/180, 
+                imu.acc[0], imu.acc[1], imu.acc[2]); 
+    // printf("%f,%f,%f,%f\n", ahrs.qw, ahrs.qx, ahrs.qy, ahrs.qz);
+    viewer.update_rotation(ahrs.qw, ahrs.qx, ahrs.qy, ahrs.qz);
 
-    MadgwickAHRSupdateIMU(imu.gyr[0]*M_PI/180, imu.gyr[1]*M_PI/180, imu.gyr[2]*M_PI/180, 
-                imu.acc[0], imu.acc[1], imu.acc[2]);
-
-    // Quaterniond q = ahrs.quaternion(); 
-    // printf("%f,%f,%f,%f\n", q.w(), q.x(), q.y(), q.z());
-
-    // viewer.update_rotation(q.w(), q.x(), q.y(), q.z());
-    viewer.update_rotation(q0, q1, q2, q3);
-
-    // viewer.update_rotation(imu.qw, imu.qx, imu.qy, imu.qz); 
-    // viewer.update_rotation(imu.roll, imu.pitch, imu.yaw); 
+    // MadgwickAHRSupdate(imu.gyr[0]*M_PI/180, imu.gyr[1]*M_PI/180, imu.gyr[2]*M_PI/180, 
+    //             imu.acc[0], imu.acc[1], imu.acc[2], imu.mag[0], imu.mag[1], imu.mag[2]);
+    // // printf("%f,%f,%f,%f\n", qw, qx, qy, qz);
+    // viewer.update_rotation(qw, qx, qy, qz);
 
     // if (pose.is_init_done == false) {
     //   Vector3d pos = Vector3d::Zero();
@@ -204,12 +204,6 @@ int main(int argc, char *argv[])
 
     // Vector3d pos = pose.pos;
     // Quaterniond q = pose.q;
-
-    // viewer.update_position(pos(0), pos(1), pos(2));
-    // viewer.update_position(0, 0, 0); 
-
-    // viewer.update_orientation(imu.qw, imu.qx, imu.qy, imu.qz); 
-    // viewer.update_orientation(imu.roll, imu.pitch, imu.yaw); 
 
     current_line += 1;
     if (current_line >= imu_data.size()) {

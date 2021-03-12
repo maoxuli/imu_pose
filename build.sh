@@ -2,7 +2,7 @@
 
 # compile 
 echo "Compiling"
-g++ -c -Wall -I/usr/include/eigen3 `pkg-config --cflags opencv` MadgwickAHRS/MadgwickAHRS.c gl_cuboid.cpp main.cpp
+g++ -c -Wall -I/usr/include/eigen3 `pkg-config --cflags opencv` -I./MadgwickAHRS -I./posiiton MadgwickAHRS/MadgwickAHRS.cpp gl_cuboid.cpp main.cpp
 if [ $? -ne 0 ]; then
   echo "Compile error!"
   exit

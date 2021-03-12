@@ -1,15 +1,15 @@
-﻿#include "MadgwichAHRS.h"
+﻿#include "MadgwickAHRS.hpp"
 
-MadgwichAHRS::MadgwichAHRS(float sample_period, float beta) 
-: SamplePeriod(sample_period)
+MadgwickAHRS::MadgwickAHRS(float sampleFreq, float beta) 
+: SamplePeriod(1.0/sampleFreq)
 , Beta(beta) 
 {
-    Q.setIdentity();
+    qw = 1.0f; qx = 0.0f; qy = 0.0f; qz = 0.0f; 
 }
 
-void MadgwichAHRS::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz)
+void MadgwickAHRS::update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz)
 {
-    float q1 = Q.w(), q2 = Q.x(), q3 = Q.y(), q4 = Q.z();   // short name local variable for readability
+    float q1 = qw, q2 = qx, q3 = qy, q4 = qz; 
     float norm;
     float hx, hy, _2bx, _2bz;
     float s1, s2, s3, s4;
@@ -60,6 +60,7 @@ void MadgwichAHRS::update(float gx, float gy, float gz, float ax, float ay, floa
     _2q1my = 2 * q1 * my;
     _2q1mz = 2 * q1 * mz;
     _2q2mx = 2 * q2 * mx;
+
     hx = mx * q1q1 - _2q1my * q4 + _2q1mz * q3 + mx * q2q2 + _2q2 * my * q3 + _2q2 * mz * q4 - mx * q3q3 - mx * q4q4;
     hy = _2q1mx * q4 + my * q1q1 - _2q1mz * q2 + _2q2mx * q3 - my * q2q2 + my * q3q3 + _2q3 * mz * q4 - my * q4q4;
     _2bx = sqrt(hx * hx + hy * hy);
@@ -90,15 +91,15 @@ void MadgwichAHRS::update(float gx, float gy, float gz, float ax, float ay, floa
     q3 += qDot3 * SamplePeriod;
     q4 += qDot4 * SamplePeriod;
     norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
-    Q.w() = q1 * norm;
-    Q.x() = q2 * norm;
-    Q.y() = q3 * norm;
-    Q.z() = q4 * norm;
+    qw = q1 * norm;
+    qx = q2 * norm;
+    qy = q3 * norm;
+    qz = q4 * norm;
 }
 
-void MadgwichAHRS::update(float gx, float gy, float gz, float ax, float ay, float az)
+void MadgwickAHRS::update(float gx, float gy, float gz, float ax, float ay, float az)
 {
-    float q1 = Q.w(), q2 = Q.x(), q3 = Q.y(), q4 = Q.z();   // short name local variable for readability
+    float q1 = qw, q2 = qx, q3 = qy, q4 = qz; 
     float norm;
     float s1, s2, s3, s4;
     float qDot1, qDot2, qDot3, qDot4;
@@ -149,8 +150,8 @@ void MadgwichAHRS::update(float gx, float gy, float gz, float ax, float ay, floa
     q3 += qDot3 * SamplePeriod;
     q4 += qDot4 * SamplePeriod;
     norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
-    Q.w() = q1 * norm;
-    Q.x() = q2 * norm;
-    Q.y() = q3 * norm;
-    Q.z() = q4 * norm;
+    qw = q1 * norm;
+    qx = q2 * norm;
+    qy = q3 * norm;
+    qz = q4 * norm;
 }

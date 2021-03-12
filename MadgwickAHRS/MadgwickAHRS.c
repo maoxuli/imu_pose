@@ -17,18 +17,21 @@
 
 #include "MadgwickAHRS.h"
 #include <math.h>
+#include <cstdio>
+#include <cassert>
 
 //---------------------------------------------------------------------------------------------------
 // Definitions
 
-#define sampleFreq	512.0f		// sample frequency in Hz
-#define betaDef		0.1f		// 2 * proportional gain
+#define sampleFreqDef	512.0f		// sample frequency in Hz
+#define betaDef			0.1f		// 2 * proportional gain
 
 //---------------------------------------------------------------------------------------------------
 // Variable definitions
 
+volatile float sampleFreq = sampleFreqDef;					// sample frequency in Hz
 volatile float beta = betaDef;								// 2 * proportional gain (Kp)
-volatile float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;	// quaternion of sensor frame relative to auxiliary frame
+volatile float qw = 1.0f, qx = 0.0f, qy = 0.0f, qz = 0.0f;	// quaternion of sensor frame relative to auxiliary frame
 
 //---------------------------------------------------------------------------------------------------
 // Function declarations
@@ -42,6 +45,7 @@ float invSqrt(float x);
 // AHRS algorithm update
 
 void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
+	float q0 = qw, q1 = qx, q2 = qy, q3 = qz; 
 	float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
@@ -68,7 +72,6 @@ void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float 
 		ax *= recipNorm;
 		ay *= recipNorm;
 		az *= recipNorm;   
-
 		// Normalise magnetometer measurement
 		recipNorm = invSqrt(mx * mx + my * my + mz * mz);
 		mx *= recipNorm;
@@ -122,6 +125,9 @@ void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float 
 		qDot3 -= beta * s2;
 		qDot4 -= beta * s3;
 	}
+	else {
+		assert(false); 
+	}
 
 	// Integrate rate of change of quaternion to yield quaternion
 	q0 += qDot1 * (1.0f / sampleFreq);
@@ -131,16 +137,17 @@ void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float 
 
 	// Normalise quaternion
 	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
-	q0 *= recipNorm;
-	q1 *= recipNorm;
-	q2 *= recipNorm;
-	q3 *= recipNorm;
+	qw = q0 * recipNorm;
+	qx = q1 * recipNorm;
+	qy = q2 * recipNorm;
+	qz = q3 * recipNorm;
 }
 
 //---------------------------------------------------------------------------------------------------
 // IMU algorithm update
 
 void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
+	float q0 = qw, q1 = qx, q2 = qy, q3 = qz; 
 	float recipNorm;
 	float s0, s1, s2, s3;
 	float qDot1, qDot2, qDot3, qDot4;
@@ -202,24 +209,30 @@ void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, flo
 
 	// Normalise quaternion
 	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
-	q0 *= recipNorm;
-	q1 *= recipNorm;
-	q2 *= recipNorm;
-	q3 *= recipNorm;
+	qw = q0 * recipNorm;
+	qx = q1 * recipNorm;
+	qy = q2 * recipNorm;
+	qz = q3 * recipNorm;
 }
 
 //---------------------------------------------------------------------------------------------------
 // Fast inverse square-root
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
 
+// // !!! output negative result some times 
+// float invSqrt(float x) {
+// 	float halfx = 0.5f * x;
+// 	float y = x;
+// 	long i = *(long*)&y;
+// 	i = 0x5f3759df - (i>>1);
+// 	y = *(float*)&i;
+// 	y = y * (1.5f - (halfx * y * y));
+// 	return y;
+// }
+
 float invSqrt(float x) {
-	float halfx = 0.5f * x;
-	float y = x;
-	long i = *(long*)&y;
-	i = 0x5f3759df - (i>>1);
-	y = *(float*)&i;
-	y = y * (1.5f - (halfx * y * y));
-	return y;
+	assert(x != 0); 
+	return 1/sqrt(x); 
 }
 
 //====================================================================================================
